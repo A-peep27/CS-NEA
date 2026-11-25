@@ -141,8 +141,8 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
                 System.out.println("map made");
             }
 
-            //mapMaker.cullGrid(); // removes empty rows and colembs this is so the map is a resoable size
-            mapMaker.makeMapFull(); // makes it into one large ssquare for testing
+            mapMaker.cullGrid(); // removes empty rows and colembs this is so the map is a resoable size
+            //mapMaker.makeMapFull(); // makes it into one large ssquare for testing
 
             System.out.println(tryCount);
             if (madeMap) { // removes the squares if makeing a second grid on top
@@ -163,13 +163,13 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
             System.out.println("time to make grid : " + (double)(timeEnd - timeStart)/1000000000 + "s \n");
 
             gridWidth = map[0].length;
-            gridHight = map.length;
+            gridHight = map.length;     // using varables to make some steps simpler and faster
             timeStart = System.nanoTime();
             createNewPanelTable();
             String sqlStatment = "INSERT INTO panels (row_num, square, x, y) VALUES (?, ?, ?, ?)";
             try (Connection con = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
                  PreparedStatement statment = con.prepareStatement(sqlStatment)) {
-                 
+
                  squareSize = new int[]{((int) ((hight - 100) / gridHight)), ((int) ((width - 100) / gridWidth))};
                  for (int row = 0; row < gridHight; row++) {
                     for (int square = 0; square < gridWidth; square++) {
@@ -178,7 +178,7 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
                             panels.add(new MyPanel(squareSize[1] * (square + 1), squareSize[0] * (row + 1), squareSize[1], squareSize[0], Color.BLACK));
                             panel = panels.getLast();
 
-                            //statment.execute("INSERT INTO panels (row, square, x, y)");
+                            // adds the infomation of the square on to a DB for later use
                             statment.setInt(1, row);
                             statment.setInt(2, square);
                             statment.setInt(3, squareSize[1] * (square + 1));
@@ -188,6 +188,7 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
 
                             panel.addMouseListener(this);
 
+                            // adds to the frame
                             layeredPane.add(
                                     panel,
                                     JLayeredPane.DEFAULT_LAYER);
@@ -207,7 +208,6 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
 
             frame.revalidate();
             frame.repaint();
-
 
             JLabel label = new JLabel(); // dispays the number of squares on screen
             label.setText("" + panelMax);
@@ -261,7 +261,7 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
             // for this we are going to say that team '1' is the players team
 
             statment.execute("CREATE TABLE IF NOT EXISTS bases (id INT AUTO_INCREMENT PRIMARY KEY, team INT, x INT, y INT, type INT)");
-            statment.execute("TRUNCATE TABLE stats RESTART IDENTITY"); // clears all previos data
+            statment.execute("TRUNCATE TABLE bases RESTART IDENTITY"); // clears all previos data
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -327,6 +327,7 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
     }
     //-DB adding data
     public void addToPanelTable(int rwo_num, int square, int x, int y){
+        // adds to the panles DB
         // 1 - id, 2 - row_num, 3 - square, 4 - x, 5 - y
         String sqlStatment = "INSERT INTO panels (row_num, square, x, y) VALUES (?, ?, ?, ?)";
         try (Connection con = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
@@ -345,6 +346,7 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
 
     }
     public void addToStatsTable(String name, int hp, int str, int team, int x, int y){
+        // adds sothing to the stats DB
         // 1 - id, 2 - name, 3 - hp, 4 - maxHp, 5 - str, 6 - x (square), 7 - y (row), 8 - team
         String sqlStatment = "INSERT INTO stats (name, hp, maxHp, str, x, y, team) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection con = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
@@ -413,6 +415,7 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
         frame.repaint();
     }
     public void resetAllColors(){
+        // resets all of the squares on screens color to their default
         MyPanel panel;
         for (int i = 0; i < panelMax; i++){
             panel = panels.get(i);
@@ -453,6 +456,7 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
     public int[] findGridLocation(int index){
         // finds the row and colomn of the sqaure on the grid
         // i could turn this into part of the data bace later to speed it up but thats a futer me problem
+        // it works less accuratly with the DB for some reason
 
         int row = 0;
         int colemb = 0;
@@ -489,7 +493,7 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
     }
     public boolean[] checkSurroundings(int x, int y){ //checks which of the 4 surrounding sqaurs are a square
         boolean[] free = new boolean[]{false, false, false, false};
-        // the if statment before is to ensure that we dont go out of the grid when pathfinding
+        // the if statments before is to ensure that we dont go out of the grid when pathfinding
         if (y!=(map.length-1)) {
             if (map[y + 1][x] == 1) {
                 free[0] = true;
@@ -567,6 +571,7 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
                 tempDist = findDist(new int[]{currentSquare[0], currentSquare[1]+1}, bGridLocate);
                 choice = 0;
             }
+
             if(suroundings[1]&& !visited[currentSquare[1]][currentSquare[0]+1]){
                 if (findDist(new int[]{currentSquare[0]+1, currentSquare[1]}, bGridLocate)< tempDist) {
                     tempDist = findDist(new int[]{currentSquare[0]+1, currentSquare[1]}, bGridLocate);
@@ -611,6 +616,8 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
         }
 
         if (pathLength <= 0 ) {
+            // we pass the path length varable through to also see if we wanted to use the function for testing
+            // as id its 0 or less we show the hole path and display it which alows for testing
             if (foundDestiantion){
                 System.out.println("found a  path");
             }
@@ -631,6 +638,7 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
             System.out.println("done");
         }
         else {
+            // this uses the path length to retun a path of that length
             int[] returnPath = new int[pathLength];
             for (int i = 0; i < itterationNum && i < pathLength; i++) {
                 returnPath[i] = gridIndexPath[i];
@@ -681,7 +689,7 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
         easy part:
             so first part of this wont be to hard to make as we opnly need to change the color if a ssquare and give it an atribute
             then we dispaly it
-            donr
+            done
         harder part
             make it do stuff :(
             so what do we want ti to do?
@@ -692,6 +700,28 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
             this can the nalow for us to make rooms do things to troops portentialy linking it to color
      */
     //room functions
+    public boolean isARoomThere (int x, int y){
+        // 1 - id, 2 - team, 3 - x, 4 - y, 5 - type
+        String sql = "SELECT 1 FROM bases WHERE x = ? AND y = ? LIMIT 1";
+        int id = 0;
+
+        // uses the DB to see if there is a room in that location
+
+        try (Connection con = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement statment = con.prepareStatement(sql)) {
+
+            statment.setInt(1, x);
+            statment.setInt(2, y);
+
+            try(ResultSet rs = statment.executeQuery()) {
+                return rs.next();
+            }
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
     public void makePlayerRoom(int gridLocation){
 
         /*
@@ -767,6 +797,9 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
         //System.out.println("player room made");
     }
     public int checkSurroundingsUsed(int x, int y, boolean[][] areaFill){
+
+        // alows me to see which of the 8 surounding sqares are used i needed a second funtion for this as the checkSurroundings as that only
+        // checks 4 rooms
         int free = 0;
         if (y!=(areaFill.length-1)) {
             if(x!=0) {
@@ -848,7 +881,7 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
 
         int bounds = 11;
         int halfBound = (int) Math.floor(bounds/2); // i also use this just so there is less repeated calulations and it looks nice
-        
+
         // initolizes all things to do with making a new team on the grid
         if (!teamOnScreen){
             int x = random.nextInt(0, hight);
@@ -948,7 +981,7 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
             for (int row= 0 ; row < bounds; row++){
                 if(!((baseY - halfBound + row) < 0 || (baseY - halfBound + row) > map.length)) {
                     for (int colem = 0; colem < bounds; colem++) {
-                        if (!((baceX - halfBound + colem) < 0 || (baceX - halfBound + colem) > map[0].length)) {
+                        if (((baceX - halfBound + colem) > 0 || (baceX - halfBound + colem) < map[0].length)) {
                             if (random.nextInt(0, 100) < roomChance && map[baseY - halfBound + row][baceX - halfBound + colem] == 1) {
                                 areaFill[row][colem] = true;
                                 fillList[counter] =  (findSquare((baceX - halfBound + colem), (baseY - halfBound + row)));
@@ -979,26 +1012,64 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
             // so we can stop it at a set value
             counter = 0;
             int freeNum = 0;
-            for(int row = 0; row < bounds; row++){
-                for(int colem = 0; colem< bounds; colem++){
-                    if(areaFill[row][colem]) {
-                        freeNum = checkSurroundingsUsed(colem, row, areaFill);
-                        if (freeNum < 3) {
-                            // i know that this is a useless if statment but it makes the code make more sense
-                        } else if (freeNum < 5 && freeNum >= 3) {
-                            counter++;
-                            fillList[counter] = (findSquare((baceX - halfBound + colem), (baseY - halfBound + row)));
-                        } else if (freeNum > 4) {
+            int value = 0;
+            int[][] grid = new int[bounds][bounds];
+
+            int[] moveDist = {1, 0, -1, 0};
+            int xIndex = 0;
+            int yIndex = 1;
+            int upTo = 1;
+            int row = halfBound;
+            int colem = halfBound;
+
+            while (value < bounds * bounds && counter < maxFill){
+                for (int j =0; j < 2 && value < bounds * bounds; j++){
+                    for(int i = 0; i < upTo && value < bounds * bounds; i ++){
+                        value++;
+                        colem += moveDist[xIndex];
+                        row += moveDist[yIndex];
+                        if (row < bounds && colem < bounds) {
+                            if (areaFill[row][colem]) {
+                                freeNum = checkSurroundingsUsed(colem, row, areaFill);
+                                if (freeNum < 3) {
+                                    // i know that this is a useless if statment but it makes the code make more sense
+                                } else if (freeNum < 5 && freeNum >= 3) {
+                                    if (!isARoomThere((baceX - halfBound + colem), (baseY - halfBound + row))) {
+                                        counter++;
+                                        fillList[counter] = (findSquare((baceX - halfBound + colem), (baseY - halfBound + row)));
+                                    }
+                                } else if (freeNum > 4) {
+                                }
+                            }
+                        }
+                        if (row >= 0 && row < bounds && colem >= 0 && colem < bounds) {
+                            grid[row][colem] = value;
                         }
                     }
+                    xIndex++;
+                    if (xIndex > 3){
+                        xIndex = 0;
+                    }
+                    yIndex++;
+                    if (yIndex > 3){
+                        yIndex = 0;
+                    }
                 }
+                upTo++;
             }
+
+            int[] xy;
 
             for(int i = 0; i< counter; i ++){
                 myPanel = panels.get(fillList[i]);
                 myPanel.changeColor(Color.ORANGE);
+                xy = findGridLocation(fillList[i]);
+                addToBaseTable(team, xy[0], xy[1], 1);
             }
             System.out.println(counter);
+            displayAllBases();
+
+            // okay so now that the rooms spawn we need to add this to the Database
 
         }
         System.out.println("enemy room made");
@@ -1073,6 +1144,16 @@ public class MyFrame extends JFrame implements ActionListener , MouseListener{
             return false;
         }
     }
+
+    /* okay so now we have most of the fnctions that we need we just need to make the whole thing itterate
+    so how do we do this?
+        - make rounds
+        - make constand development
+        - have the player go at their own pace and randomly have enemy devlopment
+    ill go with rounds as this makes it alot easyer for me and makes the player have to think in a way of
+    what to do next round and how that would impact stuff
+    
+     */
 
 
     @Override
