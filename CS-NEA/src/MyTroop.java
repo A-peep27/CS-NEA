@@ -1,59 +1,33 @@
 import javax.swing.*;
+import java.awt.*;
+import java.sql.*;
 
 public class MyTroop extends JPanel {
 
-    int x;
-    int y;
+
     int hp;
+    int hpMax;
     int str;
     String name;
     int hight = 5;
     int width = 5;
     boolean isDead = false;
+    int index;
+    final String DB_URL = "jdbc:h2:./my_database";
+    final String DB_USER = "";
+    final String DB_PASSWORD = "";
 
-    MyTroop (String name2, int x2, int y2, int hp2, int str2){
+    MyTroop (int id){
+        index = id;
 
-        x = x2;
-        y = y2;
-        hp = hp2;
-        str = str2;
-        name = name2;
+        setStats();
 
-        this.setBounds(x, y, hight, width);
-
+        this.setBackground(Color.YELLOW);
+        this.setBounds(1,1 ,width, hight);
     }
 
-    public void setTroopLocation(int along, int up){
-        if ((x<= 0 | y<=0) | (x>= 480 | y>=380)){
-            System.out.println("out of bounds");
-        }
-        else {
-            x= along;
-            y = up;
-        }
-        this.setLocation(x, y);
-    }
-    public void moveTroop(int along, int down){
-        x += along;
-        y += down;
-        if ((x<= 0 | y<=0) | (x>= 475 | y>=400)){
-            x-=along;
-            y-= down;
-        }
-    }
-    public void takeDamage(int damage){
-        hp -= damage;
-        if (hp <= 0){
-            System.out.println(name + "has died");
-            isDead = true;
-        }
-    }
-    public boolean isDead(){
-        return isDead;
-    }
-    public int getAttack(){
-        return str;
-    }
+
+    public boolean isDead(){ return isDead; }
     public int getAttack(int type){
         int attack = 0;
         if (type == 0){
@@ -67,7 +41,30 @@ public class MyTroop extends JPanel {
         }
         return attack;
     }
-    public String getName(){
-        return name;
+    public String getName(){ return name; }
+    private void setStats(){
+
+        // gets all the stats for the troop and saves them to the MyTroop object
+
+        // 1 - id, 2 - name, 3 - hp, 4 - maxHp, 5 - str, 6 - x (square), 7 - y (row), 8 - team
+
+        String sql = "SELECT name, hp, maxHp, str FROM stats WHERE id = ?";
+
+        try (Connection con = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement statment = con.prepareStatement(sql)) {
+
+            statment.setInt(1, index);
+            statment.execute();
+
+            ResultSet rs = statment.executeQuery();
+            rs.next();
+            name = rs.getString("name");
+            hp = rs.getInt("hp");
+            hpMax = rs.getInt("maxHp");
+            str = rs.getInt("str");
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
